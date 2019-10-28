@@ -1,0 +1,16 @@
+{
+  "action": "submitted",
+  "review": {
+    "state": "approved"
+  },
+  "pull_request": {
+    "number": 1,
+    "title": "This is the PR title"
+  },
+  "repository": {
+    "name": "repository-name",
+    "owner": {
+      "login": "username"
+    }
+  }
+}
