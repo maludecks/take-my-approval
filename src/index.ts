@@ -1,15 +1,23 @@
-import { Probot } from "probot";
+import { Probot } from 'probot';
+import GiphyRepository from './giphyRepository';
 
 export = (app: Probot) => {
-  app.on("issues.opened", async (context) => {
-    const issueComment = context.issue({
-      body: "Thanks for opening this issue!",
-    });
-    await context.octokit.issues.createComment(issueComment);
-  });
-  // For more information on building apps:
-  // https://probot.github.io/docs/
+  app.on("pull_request_review.submitted", async (context) => {
+    console.log(`Pull request review received`);
 
-  // To get your app running against GitHub, see:
-  // https://probot.github.io/docs/development/
-};
+    const { review } = context.payload;
+
+    if (review.state !== 'approved') {
+      console.log(`Skipping pull request, review state '${review.state}'`);
+      return;
+    }
+
+    const gifUrl = await (new GiphyRepository()).fetchGif();
+
+    const comment = context.issue({
+      body: `![](${gifUrl})`
+    });
+
+    await context.octokit.issues.createComment(comment);
+  });
+}

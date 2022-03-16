@@ -1,0 +1,21 @@
+{
+  "action": "opened",
+  "issue": {
+    "number": 1,
+    "user": {
+      "login": "hiimbex"
+    }
+  },
+  "review": {
+    "state": "approved"
+  },
+  "repository": {
+    "name": "testing-things",
+    "owner": {
+      "login": "hiimbex"
+    }
+  },
+  "installation": {
+    "id": 2
+  }
+}

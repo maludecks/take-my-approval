@@ -1,61 +1,79 @@
-// You can import your modules
-// import index from '../src/index'
+import nock from 'nock';
+import fs from 'fs';
+import path from 'path';
+import { Probot, ProbotOctokit } from 'probot';
+import app from '../src/index';
+import payload from './fixtures/pull_request_review.submitted.json';
 
-import nock from "nock";
-// Requiring our app implementation
-import myProbotApp from "../src";
-import { Probot, ProbotOctokit } from "probot";
-// Requiring our fixtures
-import payload from "./fixtures/issues.opened.json";
-const issueCreatedBody = { body: "Thanks for opening this issue!" };
-const fs = require("fs");
-const path = require("path");
+const pullRequestComment = { body: `![](https://gif-image-url.com)` };
 
-const privateKey = fs.readFileSync(
-  path.join(__dirname, "fixtures/mock-cert.pem"),
-  "utf-8"
+const mockedPrivateKey = fs.readFileSync(
+  path.join(__dirname, 'fixtures/mock-cert.pem'),
+  'utf-8'
 );
 
-describe("My Probot app", () => {
-  let probot: any;
+jest.mock('../etc/config', () => ({
+  giphy: {
+    rating: 'G',
+    searchTermsAllowlist: [
+      'approved'
+    ]
+  }
+}));
+
+describe('take-my-approval', () => {
+  let probot: Probot;
 
   beforeEach(() => {
     nock.disableNetConnect();
     probot = new Probot({
       appId: 123,
-      privateKey,
+      privateKey: mockedPrivateKey,
       // disable request throttling and retries for testing
       Octokit: ProbotOctokit.defaults({
         retry: { enabled: false },
         throttle: { enabled: false },
       }),
     });
-    // Load our app into probot
-    probot.load(myProbotApp);
+    probot.load(app);
   });
 
-  test("creates a comment when an issue is opened", async (done) => {
-    const mock = nock("https://api.github.com")
+  test('creates a comment after a pull request approval', async (done) => {
+    const githubMock = nock('https://api.github.com')
       // Test that we correctly return a test token
-      .post("/app/installations/2/access_tokens")
+      .post('/app/installations/2/access_tokens')
       .reply(200, {
-        token: "test",
+        token: 'test',
         permissions: {
-          issues: "write",
+          issues: 'write',
+          pull_requests: 'write',
+          pull_request_review: 'write'
         },
       })
-
       // Test that a comment is posted
-      .post("/repos/hiimbex/testing-things/issues/1/comments", (body: any) => {
-        done(expect(body).toMatchObject(issueCreatedBody));
+      .post('/repos/hiimbex/testing-things/issues/1/comments', (body: any) => {
+        done(expect(body).toMatchObject(pullRequestComment));
         return true;
       })
       .reply(200);
 
-    // Receive a webhook event
-    await probot.receive({ name: "issues", payload });
+    const giphyMock = nock('https://giphy.com')
+      .get('/gifs/random?api_key=v01234567890&tag=approved&rating=G')
+      .reply(200, {
+        data: {
+          images: {
+            original: {
+              url: 'https://gif-image-url.com'
+            }
+          }
+        }
+      });
 
-    expect(mock.pendingMocks()).toStrictEqual([]);
+    // Receive a webhook event
+    await probot.receive({ id: 'id-here', name: 'pull_request_review.submitted', payload });
+
+    expect(githubMock.pendingMocks()).toStrictEqual([]);
+    expect(giphyMock.pendingMocks()).toStrictEqual([]);
   });
 
   afterEach(() => {
@@ -64,11 +82,3 @@ describe("My Probot app", () => {
   });
 });
 
-// For more information about testing with Jest see:
-// https://facebook.github.io/jest/
-
-// For more information about using TypeScript in your tests, Jest recommends:
-// https://github.com/kulshekhar/ts-jest
-
-// For more information about testing with Nock see:
-// https://github.com/nock/nock
