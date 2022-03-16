@@ -4,6 +4,8 @@
 
 A GitHub App built with [Probot](https://github.com/probot/probot) that automatically adds a GIF to your PR every time it gets an approval ✅
 
+You can try out the bot yourself by approving this [test PR](https://github.com/maludecks/test-repo-for-github-app/pull/17). After your approval, a new comment by `takemyapproval` bot should show up 🤖
+
 ## Setup
 
 ```sh
